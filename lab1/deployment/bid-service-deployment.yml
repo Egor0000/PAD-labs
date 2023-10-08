@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bid-service-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bid-service
+  template:
+    metadata:
+      labels:
+        app: bid-service
+    spec:
+      containers:
+        - name: bid-service-prod
+          image: bid-service-prod:tag
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CASSANDRA_CONTACT_POINTS
+              value: bid-service

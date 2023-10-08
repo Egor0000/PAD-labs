@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cassandra-db1
+spec:
+  serviceName: cassandra-db1
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cassandra-db1
+  template:
+    metadata:
+      labels:
+        app: cassandra-db1
+    spec:
+      containers:
+        - name: cassandra-db1
+          image: cassandra:latest
+          ports:
+            - containerPort: 9042
+          env:
+            - name: CASSANDRA_DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cassandra-config-map
+                  key: cassandra-db1
+            - name: CASSANDRA_SEEDS
+              value: "cassandra-db1-0.cassandra-db1.default.svc.cluster.local,cassandra-db1-1.cassandra-db1.default.svc.cluster.local,cassandra-db1-2.cassandra-db1.default.svc.cluster.local"
+          resources:
+            limits:
+              memory: "1Gi"

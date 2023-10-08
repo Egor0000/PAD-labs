@@ -1,0 +1,45 @@
+server:
+  port: ${PORT:8080}
+  api:
+  address: localhost # be carefull for docker env it might fail
+spring:
+  application:
+    name: BidService
+  mvc:
+    throw-exception-if-no-handler-found: true
+    async:
+      request-timeout: 90s  # Test maximum concurrent tasks limit
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: bid
+    redis:
+      host: localhost
+      port: 6379
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+  jpa:
+    hibernate:
+      ddl-auto: update     # Database schema update strategy (if using JPA)
+    show-sql: false         # Show SQL queries (if using JPA)
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ["health", "info"]
+
+
+gateway:
+  endpoint: http://localhost:8005
+
+
+service-discovery:
+  endpoint: http://localhost:8005/discovery
+  period: 5 # seconds
+  tag: bid
+
+logging:
+  level:
+    root: info

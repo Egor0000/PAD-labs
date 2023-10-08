@@ -1,0 +1,17 @@
+    ``### Tasks
+- [] 2 services
+- [] status endpoint
+- [] task timeouts
+- [] own database
+- [] concurrent task limit
+- [] gateway in different languages
+- [] cache
+- [] service discovery
+- [] status endpoint for gateway and service discovery
+- [] load balancing: round robin
+- [] circuit breaker: log if a call fails 
+- [] unit testing
+- [] rpc
+- [] health monitoring and alerts
+- [] load balancing: service load
+- [] circuit breaker. remove service

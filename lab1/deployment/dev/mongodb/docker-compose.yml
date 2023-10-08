@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo:latest  # Use the latest MongoDB image from Docker Hub
+    container_name: my-mongodb
+    environment:
+      MONGO_INITDB_DATABASE: bid, inventory
+    ports:
+      - "27017:27017"  # Expose MongoDB port
+    volumes:
+      - mongodb-data:/data/db  # Mount a volume for persistent data
+
+volumes:
+  mongodb-data:
