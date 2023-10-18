@@ -1,21 +1,15 @@
 #!/bin/bash
 
-# Replace 'your-app' with your actual application name
-APP_NAME="bid-service-prod"
-
-start=$(date +%s.%N)
-
-export DOCKER_BUILDKIT=1
+# Set the image name and tag
+IMAGE_NAME="bid-service"
+IMAGE_TAG="latest"
 
 # Build the Docker image
-docker build --network=host -t "$APP_NAME":latest -f docker/Dockerfile .
+docker build -t "$IMAGE_NAME:$IMAGE_TAG" .
 
-docker rmi -f $(docker images -f "dangling=true" -q)
-
-docker save "$APP_NAME"
-
-# end time
-end=$(date +%s.%N)
-# run time
-runtime=$(python3 -c "print(${end} - ${start})")
-echo "Runtime was $run  time seconds"
+# Check if the build was successful
+if [ $? -eq 0 ]; then
+    echo "Docker image $IMAGE_NAME:$IMAGE_TAG built successfully."
+else
+    echo "Docker image build failed."
+fi

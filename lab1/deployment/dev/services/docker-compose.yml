@@ -1,0 +1,12 @@
+version: '3'
+services:
+  bid-service:
+    image: egorbabcinetchi/bid-service:latest
+    environment:
+      - PORT=8080
+    network_mode: host
+  invetory-service:
+    image: egorbabcinetchi/inventory-service:latest
+    environment:
+      - PORT=8085
+    network_mode: host

@@ -1,6 +1,7 @@
 package md.utm.pad.inventory.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import md.utm.pad.inventory.dtos.ProductDto;
 import md.utm.pad.inventory.entity.Product;
 import md.utm.pad.inventory.mapper.ProductMapper;
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
 
@@ -27,6 +29,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<ProductDto> getAll() {
+        log.debug("Entered service");
         return productRepository.findAll().stream()
                 .map(ProductMapper::toDto)
                 .collect(Collectors.toList());
