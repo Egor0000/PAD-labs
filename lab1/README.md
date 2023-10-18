@@ -1,3 +1,19 @@
+## LAB1 How to run
+1. Go to ./deployment/dev/mongodb
+2. Run docker compose up
+3. Go to ./deployment/dev/redis
+4. Run docker compose up
+5. Go to ./deployment/dev/gateway
+6. Run docker compose up
+7. Go to ./deployment/dev/service-discovery
+8. Run docker compose up
+9. Go to ./deployment/dev/services
+10. Run docker compose up
+11. Gateway port 8005
+12. Gateway status http://localhost:8005/gateway/health
+12. Service discovery status http://localhost:8005/service-discovery/health
+
+
 ## LAB1-Ceckpoint 1
 ### Assess Application Suitability
 1. **Real-Time Auctions**: The bidding engine and real-time updates are critical for auctions.
