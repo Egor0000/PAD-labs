@@ -5,6 +5,16 @@ services:
     environment:
       - PORT=8080
     network_mode: host
+  bid-service-2:
+    image: egorbabcinetchi/bid-service:latest
+    environment:
+      - PORT=8081
+    network_mode: host
+  bid-service-3:
+    image: egorbabcinetchi/bid-service:latest
+    environment:
+      - PORT=8082
+    network_mode: host
   invetory-service:
     image: egorbabcinetchi/inventory-service:latest
     environment:
