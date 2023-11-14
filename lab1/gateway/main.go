@@ -10,6 +10,10 @@ import (
 	"encoding/json"
 )
 
+type StatusRecorder struct {
+    http.ResponseWriter
+    Status int
+}
 
 type ServiceInfo struct {
 	Address string `json:"address"`
@@ -17,8 +21,13 @@ type ServiceInfo struct {
 }
 
 var semaphore = make(chan struct{}, 2) // Semaphore with a capacity of 2
+var circuitBreakerMap = make(map[string]*CircuitBreaker)
 
 func main() {
+
+	circuitBreakerMap["bid"] = NewCircuitBreaker()
+	circuitBreakerMap["inventory"] = NewCircuitBreaker()
+
     // go heartBeatProcessor()
     router := mux.NewRouter()
 
@@ -76,7 +85,19 @@ func reverseProxyHandler(proxy *httputil.ReverseProxy, tag string) http.HandlerF
 
         proxy := httputil.NewSingleHostReverseProxy(target)
 
-        proxy.ServeHTTP(w, r)
+        recorder := &StatusRecorder{
+            ResponseWriter: w,
+            Status:         200,
+        }
+
+        proxy.ServeHTTP(recorder, r)
+
+        log.Println("Received status code for operation: ", recorder.Status)
+
+        if recorder.Status >= 400 {
+            circuitBreaker, _ := circuitBreakerMap[tag];
+            circuitBreaker.Add(nextAddress);
+        }
     }
 }
 
@@ -93,7 +114,14 @@ func proxyHealthCheck(proxy *httputil.ReverseProxy) http.HandlerFunc {
             <-semaphore
         }()
 
-        proxy.ServeHTTP(w, r)
+        recorder := &StatusRecorder{
+            ResponseWriter: w,
+            Status:         200,
+        }
+
+        proxy.ServeHTTP(recorder, r)
+
+        // log.Println("ldjknwejkdnwkje, ", recorder.Status)
     }
 }
 
@@ -161,4 +189,15 @@ func gatewayStatus(writer http.ResponseWriter, r *http.Request) {
 	if err != nil {
 			log.Fatalln("There was an error encoding the initialized struct")
 	}
+}
+
+
+func ErrHandle(res http.ResponseWriter, req *http.Request, err error) {
+    log.Println("KKKKKKKKKKKKKKKKKk")
+    res.WriteHeader(http.StatusBadGateway)
+}     
+
+func (r *StatusRecorder) WriteHeader(status int) {
+    r.Status = status
+    r.ResponseWriter.WriteHeader(status)
 }
