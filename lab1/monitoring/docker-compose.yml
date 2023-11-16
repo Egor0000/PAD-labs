@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki-config:/etc/loki
+
+  promtail:
+    image: grafana/promtail:latest
+    volumes:
+      # - /var/log:/var/log
+      - ./promtail-config:/etc/promtail
+      - ./promtail-config/promtail-local-config.yml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers:/var/lib/docker/containers
+      - /app/logs/pad/:/app/logs/pad
+    # command: -config.file=/etc/promtail/promtail-local-config.yaml
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - loki
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin  # Change this to a secure password
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_SECURITY_COOKIE_SECURE=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+    links:
+      - loki
+
+networks:
+  default:
+    name: loki-net
+
+volumes:
+  grafana_data: {}

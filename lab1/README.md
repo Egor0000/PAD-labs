@@ -1,4 +1,17 @@
-
+## LAB1 How to run
+1. Go to ./deployment/dev/mongodb
+2. Run docker compose up
+3. Go to ./deployment/dev/redis
+4. Run docker compose up
+5. Go to ./deployment/dev/gateway
+6. Run docker compose up
+7. Go to ./deployment/dev/service-discovery
+8. Run docker compose up
+9. Go to ./deployment/dev/services
+10. Run docker compose up
+11. Gateway port 8005
+12. Gateway status http://localhost:8005/gateway/health
+12. Service discovery status http://localhost:8005/service-discovery/health
 
 
 ## LAB1-Ceckpoint 1
@@ -246,75 +259,3 @@ Containerization is essential for microservices because it provides isolation, p
 2. **Load Balancers**  NGINX distribute incoming traffic across multiple instances of a service to ensure even load distribution and high availability.
 3. **Auto-Scaling** Auto-scaling groups automatically adjust the number of instances based on predefined criteria. For example 
 the Payment Service may experience spikes in traffic when multiple users make payments simultaneously, such as when auctions end. Scaling this service horizontally ensures that payment processing remains efficient and reliable.
-
-
-## LAB1 How to run
-1. Go to ./deployment/dev/mongodb
-2. Run docker compose up
-3. Go to ./deployment/dev/redis
-4. Run docker compose up
-5. Go to ./deployment/dev/gateway
-6. Run docker compose up
-7. Go to ./deployment/dev/service-discovery
-8. Run docker compose up
-9. Go to ./deployment/dev/services
-10. Run docker compose up
-11. Gateway port 8005
-12. Gateway status http://localhost:8005/gateway/health
-12. Service discovery status http://localhost:8005/service-discovery/health
-
-### Endpoints
-
-1. Create a product
-```
-POST http://localhost:8005/products/
-```
-```json
-{
-    "name" : "Watermelons",
-    "availableQuantity": 100,
-    "owner": "11111"
-}
-```
-2. Check created product
-```
-GET http://localhost:8005/products/
-```
-3. Start new auction
-```
-POST http://localhost:8005/auctions/
-```
-```json
-{
-   "seller" : "4",
-   "productId": "{createdProductId}",
-   "startTime": "2023-10-05T15:30:00.123456Z",
-   "endTime": "2023-10-05T15:40:00.123456Z"
-}
-```
-Place the productId created in previous requests
-
-Note: startTime and endTime determines the duration  of auction.
-In the request it is set 10 min. For demonstration purposes the date is ignored. 
-It is considered only the difference between the dates. So you can leave as it is.
-4. Check created auction
-```
-GET http://localhost:8005/auctions/
-```
-5. Place new bid
-```
-POST http://localhost:8005/bids/
-```
-```json
-{
-   "bidder" : "1234",
-   "auctionId" : "{auctionId}",
-   "amount": 100.0
-}
-```
-
-Place the auctionID created in previous request
-
-Note. After the auction finished, in the service logs it can be seen the final auction winner
-
-
