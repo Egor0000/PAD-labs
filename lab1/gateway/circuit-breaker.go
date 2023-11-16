@@ -8,9 +8,10 @@ import (
 
 type CircuitBreaker struct {
 	mu          sync.Mutex
-	requestTime map[string]chan time.Time
+	requestTime map[string][]time.Time
 	failures    int
 	state       int
+	reroutes 	int
 }
 
 const (
@@ -22,7 +23,7 @@ const (
 func NewCircuitBreaker() *CircuitBreaker {
 	fmt.Println("New circuit breaker")
 	return &CircuitBreaker{
-		requestTime: make(map[string]chan time.Time),
+		requestTime: make(map[string][]time.Time),
 		state:       Closed,
 	}
 }
@@ -35,61 +36,32 @@ func (cb *CircuitBreaker) Add(address string) {
 	case Closed:
 		ch, ok := cb.requestTime[address]
 		if !ok {
-			ch = make(chan time.Time, 3)
+			ch = make([]time.Time, 0)
 			cb.requestTime[address] = ch
 		}
 
 		fmt.Println("Request time MAP: ", len(cb.requestTime[address]))
 
-		if len(cb.requestTime[address]) >=3 {
-			fmt.Println("TEST To many errors. Ignored the request")
-			// return
-		}
-
 		now := time.Now()
 
-		var newCh = make(chan time.Time, 3)
-
-		for len(ch) > 0 && len(ch) <= 3 {
-			fmt.Println("LLLLLLLLLLLLLl")
-
-			var oldTimestamp = <-ch
-
-			if now.Sub(oldTimestamp).Seconds() <= 5.0*3.5 {
-				newCh <- oldTimestamp
-			}
+		for len(ch) > 0 && len(ch) < 3 && now.Sub(ch[0]).Seconds() > 5.0*3.5 {
+			ch = ch[1:]
 		}
+		ch = append(ch, now)
 
-		// go func() {
-		// 	for {
-		// 		fmt.Println("ndlnwejdnwenldn")
-		// 		val, ok := <-newCh
-		// 		if !ok {
-		// 			// // Source channel closed, close the destination channel
-		// 			close(newCh)
-		// 			return
-		// 		}
-		// 		fmt.Println("MMMMMMMMMMMMMMMMMMMm")
+		cb.requestTime[address] = ch
 
-		// 		ch <- val
-		// 	}
+		// fmt.Println("Request time MAP 2: ", len(cb.requestTime[address]))
 
-		// 	fmt.Println("FFFFFFFFFFFFFFFFFFFFF")
-		// }()
-
-		ch <- now
-
-		fmt.Println("ch size ",len(ch))
-
-		if len(ch) > 3 && now.Sub(<-ch).Seconds() < 5.0*3.5 {
+		if len(ch) >= 3 && now.Sub(ch[0]).Seconds() < 5.0*3.5 {
 			cb.failures++
-			if cb.failures >= 3 {
-				cb.state = Open
-				go cb.backgroundCheckServiceStatus()
-			}
+			cb.state = Open
+			
+			go cb.backgroundCheckServiceStatus()
+
 			fmt.Printf("Too many failures for %s !!!\n", address)
 			// Clear the channel
-			ch = make(chan time.Time, 3)
+			ch = make([]time.Time, 0)
 			cb.requestTime[address] = ch
 		}
 	case Open:
@@ -110,6 +82,7 @@ func (cb *CircuitBreaker) backgroundCheckServiceStatus() {
 
 	if serviceIsOK {
 		cb.failures = 0
+		cb.reroutes = 0
 		cb.state = Closed
 		fmt.Println("Service is OK. Resetting circuit.")
 	}

@@ -6,3 +6,5 @@ require (
 	github.com/gorilla/mux v1.8.0
 	golang.org/x/sync v0.4.0
 )
+
+require github.com/leemcloughlin/logfile v0.0.0-20201123203928-cff1c8a30a10 // indirect

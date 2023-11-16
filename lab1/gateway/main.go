@@ -2,17 +2,20 @@ package main
 
 import (
     "log"
+    "fmt"
     "net/http"
     "net/http/httputil"
     "net/url"
     "github.com/gorilla/mux"
 	"io/ioutil"
 	"encoding/json"
+    "github.com/leemcloughlin/logfile"
 )
 
 type StatusRecorder struct {
     http.ResponseWriter
     Status int
+    Written bool
 }
 
 type ServiceInfo struct {
@@ -24,11 +27,11 @@ var semaphore = make(chan struct{}, 2) // Semaphore with a capacity of 2
 var circuitBreakerMap = make(map[string]*CircuitBreaker)
 
 func main() {
+    configureLogging()
 
 	circuitBreakerMap["bid"] = NewCircuitBreaker()
 	circuitBreakerMap["inventory"] = NewCircuitBreaker()
 
-    // go heartBeatProcessor()
     router := mux.NewRouter()
 
     router.HandleFunc("/gateway/health", gatewayStatus)
@@ -64,6 +67,17 @@ func reverseProxyHandler(proxy *httputil.ReverseProxy, tag string) http.HandlerF
     return func(w http.ResponseWriter, r *http.Request) {
         log.Println("Received new request 1")
 
+        circuitBreaker, _ := circuitBreakerMap[tag];
+
+        if circuitBreaker.state != Closed {
+            log.Println("Circuit breaker is opened !!! Cannot send more requests")
+            w.WriteHeader(400)
+            fmt.Fprint(w, "Circuit breaker is opened !!! Cannot send more requests") 
+            return
+        }
+
+
+
         select {
         case semaphore <- struct{}{}:
         default:
@@ -75,29 +89,40 @@ func reverseProxyHandler(proxy *httputil.ReverseProxy, tag string) http.HandlerF
             <-semaphore
         }()
 
-        var nextAddress = getNextService(tag)
+        var proxyStatus = 400
 
-        // todo: error handling when nextAddress is empty
-        var target, err = url.Parse(nextAddress)
-        if err != nil {
-            log.Fatal(err)
-        }
+        // for proxyStatus != 200 && circuitBreaker.reroutes <= 3 {
 
-        proxy := httputil.NewSingleHostReverseProxy(target)
+            var nextAddress = getNextService(tag)
 
-        recorder := &StatusRecorder{
-            ResponseWriter: w,
-            Status:         200,
-        }
+            // todo: circuit breaker for service discovery
+            var target, err = url.Parse(nextAddress)
+            if err != nil {
+                log.Fatal(err)
+                addToCircuitBreaker(circuitBreaker, tag)
+            }
 
-        proxy.ServeHTTP(recorder, r)
+            proxy := httputil.NewSingleHostReverseProxy(target)
 
-        log.Println("Received status code for operation: ", recorder.Status)
 
-        if recorder.Status >= 400 {
-            circuitBreaker, _ := circuitBreakerMap[tag];
-            circuitBreaker.Add(nextAddress);
-        }
+            recorder := &StatusRecorder{
+                ResponseWriter: w,
+                Status:         200,
+            }
+
+            log.Println("|||||||||||||||||||||||||||\\")
+
+            proxy.ServeHTTP(recorder, r)
+
+            log.Println("Received status code for operation: ", recorder.Status, proxy, proxyStatus)
+
+            proxyStatus = recorder.Status
+    
+            if recorder.Status >= 400 {
+                addToCircuitBreaker(circuitBreaker, tag)
+                circuitBreaker.reroutes += 1 
+            }
+        // }
     }
 }
 
@@ -121,7 +146,6 @@ func proxyHealthCheck(proxy *httputil.ReverseProxy) http.HandlerFunc {
 
         proxy.ServeHTTP(recorder, r)
 
-        // log.Println("ldjknwejkdnwkje, ", recorder.Status)
     }
 }
 
@@ -193,11 +217,36 @@ func gatewayStatus(writer http.ResponseWriter, r *http.Request) {
 
 
 func ErrHandle(res http.ResponseWriter, req *http.Request, err error) {
-    log.Println("KKKKKKKKKKKKKKKKKk")
     res.WriteHeader(http.StatusBadGateway)
 }     
 
 func (r *StatusRecorder) WriteHeader(status int) {
     r.Status = status
-    r.ResponseWriter.WriteHeader(status)
+    // r.ResponseWriter.WriteHeader(status)
+    r.Written = true
+}
+
+func addToCircuitBreaker(circuitBreaker *CircuitBreaker, tag string) {
+    if (circuitBreaker.state == Closed) {
+        circuitBreaker.Add(tag);
+    }
+}
+
+func configureLogging() {
+    var logFileName = "/app/logs/pad/gateway/log.log"
+    if logfile.Defaults.FileName != "" {
+        logFileName = logfile.Defaults.FileName
+    }
+    
+    logFile, err := logfile.New(
+        &logfile.LogFile{
+            FileName: logFileName,
+            MaxSize:  10 * 1024 * 1024, // 10Mb duh!
+            Flags:    logfile.OverWriteOnStart | logfile.RotateOnStart})
+    if err != nil {
+        log.Fatalf("Failed to create logFile %s: %s\n", logFileName, err)
+    }
+    
+    log.SetOutput(logFile)
+    // defer logFile.Close()
 }
