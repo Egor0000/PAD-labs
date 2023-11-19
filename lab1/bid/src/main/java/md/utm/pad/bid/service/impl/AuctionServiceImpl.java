@@ -112,6 +112,12 @@ public class AuctionServiceImpl implements AuctionService {
         auctionRepository.deleteAll();
     }
 
+    @Override
+    public String testRedis() {
+        sessionCache.save(new AuctionSession("1", "1", "1", 10.0));
+        return "OK";
+    }
+
     private void stopAuction(String auctionId) {
         Optional<AuctionSession> optionalAuctionSession = sessionCache.findFirstBy(auctionId);
 

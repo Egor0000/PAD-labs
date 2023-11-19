@@ -48,8 +48,8 @@ public class InventoryClientServiceImpl implements InventoryClientService {
                 .retrieve()
                 .bodyToMono(ProductDto.class)
                 .doOnError(x -> {
-                    log.error("Failed. Passing to circuit breaker");
-                    circuitBreaker.add(gatewayEndpoint);
+//                    log.error("Failed. Passing to circuit breaker");
+//                    circuitBreaker.add(gatewayEndpoint);
                 });
 
 //        return null;

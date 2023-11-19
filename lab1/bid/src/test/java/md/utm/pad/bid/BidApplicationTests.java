@@ -3,7 +3,6 @@ package md.utm.pad.bid;
 import md.utm.pad.bid.entity.AuctionSession;
 import md.utm.pad.bid.repository.AuctionRepository;
 import md.utm.pad.bid.repository.RedisRepository;
-import md.utm.pad.bid.repository.SessionRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,7 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 class BidApplicationTests {
 	@Autowired
-	private SessionRepository repository;
+	private RedisRepository repository;
 
 	@Test
 	void contextLoads() {
@@ -37,9 +36,9 @@ class BidApplicationTests {
 		auctionSession2.setMaxBidId("3");
 		auctionSession2.setMaxBidAmount(40.0);
 
-		repository.addSession(auctionSession);
-//		repository.save(auctionSession2);
-//		repository.save(auctionSession3);
+		repository.save(auctionSession);
+		repository.save(auctionSession2);
+		repository.save(auctionSession3);
 	}
 
 

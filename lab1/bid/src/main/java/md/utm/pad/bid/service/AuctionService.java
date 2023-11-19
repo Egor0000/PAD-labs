@@ -19,4 +19,6 @@ public interface AuctionService {
     void updateBid(BidDto bidDto);
     void deleteAll();
 
+    String testRedis();
+
 }

@@ -64,4 +64,12 @@ public class AuctionController {
             return ResponseEntity.badRequest();
         }).subscribeOn(Schedulers.boundedElastic());
     }
+
+    @GetMapping(value = "/testRedis")
+    @Async
+    public Mono<?> testRedis() {
+        return Mono.fromCallable(() -> {
+            return ResponseEntity.ok(auctionService.testRedis());
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
 }

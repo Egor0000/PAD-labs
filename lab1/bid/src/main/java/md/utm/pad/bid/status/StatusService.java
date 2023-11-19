@@ -57,8 +57,8 @@ public class StatusService {
                         .retrieve()
                         .bodyToMono(Void.class)
                         .doOnError(x -> {
-                            log.error("Failed. Passing to circuit breaker");
-                            circuitBreaker.add(serviceDiscoveryEndpoint);
+//                            log.error("Failed. Passing to circuit breaker");
+//                            circuitBreaker.add(serviceDiscoveryEndpoint);
                         })
                         .subscribe();
             } catch (JsonProcessingException e) {

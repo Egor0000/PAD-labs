@@ -14,10 +14,10 @@ spring:
       host: localhost
       port: 27017
       database: bid
-#    redis:
-#      cluster:
-#        nodes: localhost:6381,localhost:6379
-#        max-redirects: 3
+    redis:
+      cluster:
+        nodes: 172.20.0.1:6373,172.20.0.1:6374,172.20.0.1:6375,172.20.0.1:6376,172.20.0.1:6377,172.20.0.1:6378
+        max-redirects: 3
 #      lettuce:
 #        cluster:
 #          refresh:
@@ -48,3 +48,4 @@ service-discovery:
 logging:
   level:
     root: info
+    redis: debug
