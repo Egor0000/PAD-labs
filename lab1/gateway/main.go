@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"encoding/json"
     "github.com/leemcloughlin/logfile"
+    "time"
 )
 
 type StatusRecorder struct {
@@ -25,6 +26,7 @@ type ServiceInfo struct {
 
 var semaphore = make(chan struct{}, 2) // Semaphore with a capacity of 2
 var circuitBreakerMap = make(map[string]*CircuitBreaker)
+var servers = []string{"http://localhost:8080", "http://localhost:8085"}
 
 func main() {
     configureLogging()
@@ -32,12 +34,10 @@ func main() {
 	circuitBreakerMap["bid"] = NewCircuitBreaker()
 	circuitBreakerMap["inventory"] = NewCircuitBreaker()
 
+
     router := mux.NewRouter()
 
     router.HandleFunc("/gateway/health", gatewayStatus)
-
-    bidService := httputil.NewSingleHostReverseProxy(nil)
-    invetoryService := httputil.NewSingleHostReverseProxy(nil)
 
     var target, err = url.Parse("http://localhost:8001")
     if err != nil {
@@ -46,9 +46,15 @@ func main() {
 
     serviceDiscovery := httputil.NewSingleHostReverseProxy(target)
 
-    router.HandleFunc("/auctions/{path:.*}", reverseProxyHandler(bidService, "bid"))
-    router.HandleFunc("/bids/{path:.*}", reverseProxyHandler(bidService, "bid"))
-    router.HandleFunc("/products/{path:.*}", reverseProxyHandler(invetoryService, "inventory"))
+    router.HandleFunc("/auctions/{path:.*}", func(w http.ResponseWriter, r *http.Request) {
+		TryServersHandler(w, r, "bid")
+	})
+    router.HandleFunc("/bids/{path:.*}", func(w http.ResponseWriter, r *http.Request) {
+		TryServersHandler(w, r, "bid")
+	})
+    router.HandleFunc("/products/{path:.*}", func(w http.ResponseWriter, r *http.Request) {
+		TryServersHandler(w, r, "inventory")
+	})
     router.HandleFunc("/service-discovery/health", proxyHealthCheck(serviceDiscovery))
 
     router.HandleFunc("/discovery/status", registerService(serviceDiscovery))
@@ -60,70 +66,6 @@ func main() {
     }()
 
     select {}
-}
-
-func reverseProxyHandler(proxy *httputil.ReverseProxy, tag string) http.HandlerFunc {
-    log.Println("Received new request")
-    return func(w http.ResponseWriter, r *http.Request) {
-        log.Println("Received new request 1")
-
-        circuitBreaker, _ := circuitBreakerMap[tag];
-
-        if circuitBreaker.state != Closed {
-            log.Println("Circuit breaker is opened !!! Cannot send more requests")
-            w.WriteHeader(400)
-            fmt.Fprint(w, "Circuit breaker is opened !!! Cannot send more requests") 
-            return
-        }
-
-
-
-        select {
-        case semaphore <- struct{}{}:
-        default:
-            w.WriteHeader(http.StatusTeapot)
-            return
-        }
-
-        defer func() {
-            <-semaphore
-        }()
-
-        var proxyStatus = 400
-
-        // for proxyStatus != 200 && circuitBreaker.reroutes <= 3 {
-
-            var nextAddress = getNextService(tag)
-
-            // todo: circuit breaker for service discovery
-            var target, err = url.Parse(nextAddress)
-            if err != nil {
-                log.Fatal(err)
-                addToCircuitBreaker(circuitBreaker, tag)
-            }
-
-            proxy := httputil.NewSingleHostReverseProxy(target)
-
-
-            recorder := &StatusRecorder{
-                ResponseWriter: w,
-                Status:         200,
-            }
-
-            log.Println("|||||||||||||||||||||||||||\\")
-
-            proxy.ServeHTTP(recorder, r)
-
-            log.Println("Received status code for operation: ", recorder.Status, proxy, proxyStatus)
-
-            proxyStatus = recorder.Status
-    
-            if recorder.Status >= 400 {
-                addToCircuitBreaker(circuitBreaker, tag)
-                circuitBreaker.reroutes += 1 
-            }
-        // }
-    }
 }
 
 func proxyHealthCheck(proxy *httputil.ReverseProxy) http.HandlerFunc {
@@ -216,16 +158,6 @@ func gatewayStatus(writer http.ResponseWriter, r *http.Request) {
 }
 
 
-func ErrHandle(res http.ResponseWriter, req *http.Request, err error) {
-    res.WriteHeader(http.StatusBadGateway)
-}     
-
-func (r *StatusRecorder) WriteHeader(status int) {
-    r.Status = status
-    // r.ResponseWriter.WriteHeader(status)
-    r.Written = true
-}
-
 func addToCircuitBreaker(circuitBreaker *CircuitBreaker, tag string) {
     if (circuitBreaker.state == Closed) {
         circuitBreaker.Add(tag);
@@ -250,3 +182,115 @@ func configureLogging() {
     log.SetOutput(logFile)
     // defer logFile.Close()
 }
+
+
+
+
+
+
+
+
+
+
+
+func TryServersHandler(w http.ResponseWriter, r *http.Request, tag string) {
+
+    log.Println("Received new request 1")
+
+    circuitBreaker, _ := circuitBreakerMap[tag];
+
+    if circuitBreaker.state != Closed {
+        log.Println("Circuit breaker is opened !!! Cannot send more requests")
+        w.WriteHeader(400)
+        fmt.Fprint(w, "Circuit breaker is opened !!! Cannot send more requests") 
+        return
+    }
+
+    select {
+    case semaphore <- struct{}{}:
+    default:
+        w.WriteHeader(http.StatusTeapot)
+        return
+    }
+
+    defer func() {
+        <-semaphore
+    }()
+
+	// List of servers to try
+	for i := 0; i < 3; i++ {
+        if circuitBreaker.state != Closed {
+            log.Println("Circuit breaker is opened !!! Cannot send more requests")
+            w.WriteHeader(400)
+            fmt.Fprint(w, "Circuit breaker is opened !!! Cannot send more requests") 
+            return
+        }
+
+        var nextAddress = getNextService(tag)
+
+        // todo: circuit breaker for service discovery
+        var _, err = url.Parse(nextAddress)
+        if err != nil {
+            log.Fatal(err)
+            addToCircuitBreaker(circuitBreaker, tag)
+        }
+
+		fmt.Printf("Trying server: %s\n", nextAddress)
+
+
+		// Create a new HTTP client with a timeout
+		client := &http.Client{
+			Timeout: 5 * time.Second,
+		}
+
+		// Create a new request with the same method and URL as the original request
+		req, err := http.NewRequest(r.Method, nextAddress+r.URL.String(), r.Body)
+		if err != nil {
+			// Handle error, log, or return an error response
+			fmt.Printf("Error creating request for server %s: %v\n", nextAddress, err)
+			continue
+		}
+
+		// Copy headers from the original request to the new request
+		req.Header = r.Header
+
+		// Make a request to the current server
+		resp, err := client.Do(req)
+		if err == nil && resp.StatusCode == http.StatusOK {
+            
+			defer resp.Body.Close()
+			body, _ := ioutil.ReadAll(resp.Body)
+
+			// If the request was successful, respond to the original request with the server's response
+			w.WriteHeader(http.StatusOK)
+			w.Write(body)
+			return
+		}
+
+		// Log the error if the request to the current server failed
+		fmt.Printf("Error connecting to server %s: %v\n", nextAddress, resp.StatusCode)
+
+        if resp.StatusCode >= 400 {
+            addToCircuitBreaker(circuitBreaker, tag)
+            circuitBreaker.reroutes += 1 
+        }
+	}
+
+    if circuitBreaker.state != Closed {
+        log.Println("Circuit breaker is opened !!! Cannot send more requests")
+        w.WriteHeader(400)
+        w.Write([]byte("Circuit breaker is opened !!! Cannot send more requests"))
+        return
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
