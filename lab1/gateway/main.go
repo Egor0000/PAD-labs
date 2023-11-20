@@ -26,7 +26,6 @@ type ServiceInfo struct {
 
 var semaphore = make(chan struct{}, 2) // Semaphore with a capacity of 2
 var circuitBreakerMap = make(map[string]*CircuitBreaker)
-var servers = []string{"http://localhost:8080", "http://localhost:8085"}
 
 func main() {
     configureLogging()
@@ -183,16 +182,6 @@ func configureLogging() {
     // defer logFile.Close()
 }
 
-
-
-
-
-
-
-
-
-
-
 func TryServersHandler(w http.ResponseWriter, r *http.Request, tag string) {
 
     log.Println("Received new request 1")
@@ -283,14 +272,3 @@ func TryServersHandler(w http.ResponseWriter, r *http.Request, tag string) {
         return
     }
 }
-
-
-
-
-
-
-
-
-
-
-
