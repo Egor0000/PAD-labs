@@ -2,6 +2,7 @@ package md.utm.pad.inventory.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import md.utm.pad.inventory.dtos.AuctionDto;
 import md.utm.pad.inventory.dtos.ProductDto;
 import md.utm.pad.inventory.entity.Product;
 import md.utm.pad.inventory.mapper.ProductMapper;
@@ -48,15 +49,36 @@ public class ProductServiceImpl implements ProductService {
             return null;
         }
 
+
         Product product = optionalProduct.get();
+
+        if (product.isReserved() && status) {
+            log.error("WARNING !!! Product {} is reserved", product.getId());
+        }
 
         product.setReserved(status);
 
         return ProductMapper.toDto(productRepository.save(product));
     }
 
+
+    // No logic, just to show working saga. For more logic need to refactor, as by adding saga some flows are changed
+    @Override
+    public ProductDto getAndUpdateStatus(AuctionDto auctionDto) {
+        return getAndUpdateStatus(auctionDto.getProductId(), true);
+    }
+
     @Override
     public void delete(String id) {
          productRepository.deleteById(id);
+    }
+
+    @Override
+    public void compensateProduct(ProductDto productDto) {
+        if (productDto == null) {
+            log.error("Null product");
+            return;
+        }
+        getAndUpdateStatus(productDto.getId(), false);
     }
 }

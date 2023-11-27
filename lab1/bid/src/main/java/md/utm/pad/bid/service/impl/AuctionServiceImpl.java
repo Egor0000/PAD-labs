@@ -1,10 +1,10 @@
 package md.utm.pad.bid.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import md.utm.pad.bid.dto.AuctionDto;
-import md.utm.pad.bid.dto.BidDto;
-import md.utm.pad.bid.dto.ProductDto;
+import md.utm.pad.bid.dto.*;
 import md.utm.pad.bid.entity.Auction;
 import md.utm.pad.bid.entity.AuctionSession;
 import md.utm.pad.bid.mappers.AuctionMapper;
@@ -26,36 +26,24 @@ public class AuctionServiceImpl implements AuctionService {
     private final AuctionRepository auctionRepository;
     private final RedisRepository sessionCache;
     private final InventoryClientServiceImpl inventoryClientService;
+    private final ObjectMapper objectMapper;
     private final Map<String, Timer> auctionTimer = new ConcurrentHashMap<>();
 
     @Override
     public Mono<String> create(AuctionDto auction) {
         //kinda of callback hell, but its fine :-)
         return inventoryClientService.getAndChangeStatus(auction.getProductId(), true).flatMap(product -> {
-            Auction savedAuction =  auctionRepository.save(AuctionMapper.toEntity(auction));
-            AuctionSession auctionSession = new AuctionSession();
-
-            auctionSession.setAuctionId(savedAuction.getId());
-
-            Timer timer = new Timer();
-
-            TimerTask task = new AuctionSessionTask(savedAuction.getId(), this);
-            long endMillis = savedAuction.getEndTime().atZone(ZoneOffset.UTC).toInstant().toEpochMilli();
-
-            long startMillis = savedAuction.getStartTime().atZone(ZoneOffset.UTC).toInstant().toEpochMilli();
-
-            timer.schedule(task, endMillis - startMillis);
-
-            log.info("Scheduling auction ending after {} ms", endMillis - startMillis);
-
-            auctionTimer.put(savedAuction.getId(), timer);
-
-            sessionCache.save(auctionSession);
-
-            log.info("Started the auction! waiting for new bids");
-
-            return Mono.just(savedAuction.getId());
+            return Mono.just(saveAuction(auction));
         });
+    }
+
+    @Override
+    public String create(Saga saga) throws JsonProcessingException {
+        List<Map.Entry<String, String>> pastObj = saga.getPastObjects();
+        AuctionDto auction = objectMapper.readValue(saga.getPastObjects().get(0).getValue(), AuctionDto.class);
+        String res = saveAuction(auction);
+        pastObj.add(new AbstractMap.SimpleEntry<>(objectMapper.writeValueAsString(new Transaction()), res));
+        return res;
     }
 
     @Override
@@ -133,6 +121,32 @@ public class AuctionServiceImpl implements AuctionService {
         auctionTimer.remove(auctionId);
 
         log.info("Auction stopped!!! The winner bid is {}", session.getMaxBidId());
+    }
+
+    private String saveAuction(AuctionDto auctionDto) {
+        Auction savedAuction =  auctionRepository.save(AuctionMapper.toEntity(auctionDto));
+        AuctionSession auctionSession = new AuctionSession();
+
+        auctionSession.setAuctionId(savedAuction.getId());
+
+        Timer timer = new Timer();
+
+        TimerTask task = new AuctionSessionTask(savedAuction.getId(), this);
+        long endMillis = savedAuction.getEndTime().atZone(ZoneOffset.UTC).toInstant().toEpochMilli();
+
+        long startMillis = savedAuction.getStartTime().atZone(ZoneOffset.UTC).toInstant().toEpochMilli();
+
+        timer.schedule(task, endMillis - startMillis);
+
+        log.info("Scheduling auction ending after {} ms", endMillis - startMillis);
+
+        auctionTimer.put(savedAuction.getId(), timer);
+
+        sessionCache.save(auctionSession);
+
+        log.info("Started the auction! waiting for new bids");
+
+        return savedAuction.getId();
     }
 
 

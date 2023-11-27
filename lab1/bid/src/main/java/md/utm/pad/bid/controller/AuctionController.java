@@ -56,12 +56,12 @@ public class AuctionController {
         return Mono.fromCallable(() -> {
             try {
                 log.info("ENTERING");
-                Thread.sleep(100); // Sleep for 10 seconds (for demonstration purposes)
-
+                Thread.sleep(10000); // Sleep for 10 seconds (for demonstration purposes)
+                return ResponseEntity.ok("Hello");
             } catch (InterruptedException ex) {
                 log.warn("interrupted");
             }
-            return ResponseEntity.badRequest();
+            return ResponseEntity.ok("Hello");
         }).subscribeOn(Schedulers.boundedElastic());
     }
 

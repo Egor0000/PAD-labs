@@ -38,7 +38,7 @@ func main() {
 
     router.HandleFunc("/gateway/health", gatewayStatus)
 
-    var target, err = url.Parse("http://localhost:8001")
+    var target, err = url.Parse("http://localhost:8888")
     if err != nil {
         log.Fatal(err)
     }
@@ -109,7 +109,7 @@ func registerService(proxy *httputil.ReverseProxy) http.HandlerFunc {
 
 func getNextService(tag string) string {
 
-    var url = "http://localhost:8001/discovery/status?tag="+tag// Replace with your desired URL and key value.
+    var url = "http://localhost:8888/discovery/status?tag="+tag// Replace with your desired URL and key value.
 
 	// Make the GET request to the URL.
 	var resp, err = http.Get(url)
@@ -217,6 +217,9 @@ func TryServersHandler(w http.ResponseWriter, r *http.Request, tag string) {
 
         var nextAddress = getNextService(tag)
 
+        fmt.Printf("Trying server 1: %s\n", nextAddress)
+
+
         // todo: circuit breaker for service discovery
         var _, err = url.Parse(nextAddress)
         if err != nil {
@@ -231,6 +234,10 @@ func TryServersHandler(w http.ResponseWriter, r *http.Request, tag string) {
 		client := &http.Client{
 			Timeout: 5 * time.Second,
 		}
+
+        log.Println("Received new request 3 :::",  nextAddress)
+
+
 
 		// Create a new request with the same method and URL as the original request
 		req, err := http.NewRequest(r.Method, nextAddress+r.URL.String(), r.Body)

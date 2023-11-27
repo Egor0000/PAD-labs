@@ -11,6 +11,7 @@ spring:
       request-timeout: 90s  # Test maximum concurrent tasks limit
   data:
     mongodb:
+      uri: mongodb://localhost:27017,localhost:27017/bid?serverSelectionTimeoutMS=2000&connectTimeoutMS=2000
       host: localhost
       port: 27017
       database: bid
@@ -29,6 +30,9 @@ spring:
     hibernate:
       ddl-auto: update     # Database schema update strategy (if using JPA)
     show-sql: false         # Show SQL queries (if using JPA)
+  rabbitmq:
+    host: localhost
+    port: 5672
 
 management:
   endpoints:

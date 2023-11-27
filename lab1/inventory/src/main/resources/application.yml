@@ -10,6 +10,7 @@ spring:
     name: InventoryService
   data:
     mongodb:
+      uri: mongodb://localhost:27017,localhost:27017/inventory?serverSelectionTimeoutMS=2000&connectTimeoutMS=2000
       host: localhost
       port: 27017
       database: inventory

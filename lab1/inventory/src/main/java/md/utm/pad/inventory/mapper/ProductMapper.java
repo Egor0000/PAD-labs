@@ -14,6 +14,7 @@ public class ProductMapper {
         productDto.setName(product.getName());
         productDto.setOwner(product.getOwner());
         productDto.setAvailableQuantity(product.getAvailableQuantity());
+        productDto.setReserved(product.isReserved());
         return productDto;
     }
 
@@ -26,6 +27,7 @@ public class ProductMapper {
         product.setAvailableQuantity(productDto.getAvailableQuantity());
         product.setName(productDto.getName());
         product.setOwner(productDto.getOwner());
+        product.setReserved(productDto.isReserved());
         return product;
     }
 }
