@@ -7,6 +7,7 @@ import (
 	"time"
 	"encoding/json"
 	"io/ioutil"
+    "github.com/leemcloughlin/logfile"
 )
 
 type ServiceInfo struct {
@@ -179,6 +180,8 @@ func serviceDiscoveryStatus(writer http.ResponseWriter, r *http.Request) {
 
 
 func main() {
+    configureLogging()
+
 	go heartBeatProcessor()
 
     http.HandleFunc("/discovery/status", func(w http.ResponseWriter, r *http.Request) {
@@ -203,5 +206,24 @@ func main() {
     }()
 
     select {}
+}
+
+func configureLogging() {
+    var logFileName = "/app/logs/pad/service_discovery/log.log"
+    if logfile.Defaults.FileName != "" {
+        logFileName = logfile.Defaults.FileName
+    }
+    
+    logFile, err := logfile.New(
+        &logfile.LogFile{
+            FileName: logFileName,
+            MaxSize:  10 * 1024 * 1024, // 10Mb duh!
+            Flags:    logfile.OverWriteOnStart | logfile.RotateOnStart})
+    if err != nil {
+        log.Fatalf("Failed to create logFile %s: %s\n", logFileName, err)
+    }
+    
+    log.SetOutput(logFile)
+    // defer logFile.Close()
 }
 

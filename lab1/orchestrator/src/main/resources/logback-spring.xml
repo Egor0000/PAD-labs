@@ -1,7 +1,4 @@
-
-
 <configuration>
-<!--    <springProperty scope="context" name="port" source="server.port"/>-->
     <!-- Console Appender -->
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -11,13 +8,13 @@
 
     <!-- File Appender -->
     <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>/app/logs/pad/bid/log.log</file>
+        <file>/app/logs/pad/orchestrator/log.log</file>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- Log files will be archived when they reach 10 MB and at midnight -->
-            <fileNamePattern>/app/log/pad/bid/log.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>/app/log/pad/orchestrator/log.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
             <maxFileSize>10MB</maxFileSize>
             <maxHistory>7</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>

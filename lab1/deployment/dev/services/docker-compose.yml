@@ -1,22 +1,33 @@
 version: '3'
 services:
   bid-service:
-    image: egorbabcinetchi/bid-service:latest
+    image: bid-service:latest
     environment:
       - PORT=8080
     network_mode: host
+    volumes:
+      - /app/logs/pad/bid/1/:/app/logs/pad/bid/
+
   bid-service-2:
-    image: egorbabcinetchi/bid-service:latest
+    image: bid-service:latest
     environment:
       - PORT=8081
     network_mode: host
+    volumes:
+      - /app/logs/pad/bid/2/:/app/logs/pad/bid/
+
   bid-service-3:
-    image: egorbabcinetchi/bid-service:latest
+    image: bid-service:latest
     environment:
       - PORT=8082
     network_mode: host
+    volumes:
+      - /app/logs/pad/bid/3/:/app/logs/pad/bid/
+
   invetory-service:
     image: egorbabcinetchi/inventory-service:latest
     environment:
       - PORT=8085
     network_mode: host
+    volumes:
+      - /app/logs/pad/inventory/1/:/app/logs/pad/inventory/

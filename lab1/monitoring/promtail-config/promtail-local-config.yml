@@ -23,7 +23,7 @@ scrape_configs:
     - localhost
     labels:
       job: bidlogs
-      __path__: /app/logs/pad/bid/*log
+      __path__: /app/logs/pad/bid/*/*log
 
 - job_name: gateway
   static_configs:
@@ -40,3 +40,19 @@ scrape_configs:
     labels:
       job: service_discovery
       __path__: /app/logs/pad/service_discovery/*log
+
+- job_name: inventory
+  static_configs:
+  - targets:
+    - localhost
+    labels:
+      job: inventory
+      __path__: /app/logs/pad/inventory/*/*log
+
+- job_name: orchestrator
+  static_configs:
+  - targets:
+    - localhost
+    labels:
+      job: orchestrator
+      __path__: /app/logs/pad/orchestrator/*log

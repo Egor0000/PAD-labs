@@ -1,0 +1,4 @@
+docker exec -it redis1 sh
+redis-cli -c -h 172.20.0.31 -p 6373 cluster nodes
+redis-cli --cluster call 172.20.0.31:6373 KEYS "*"
+redis-cli --cluster call 172.20.0.31:6373 FLUSHALL

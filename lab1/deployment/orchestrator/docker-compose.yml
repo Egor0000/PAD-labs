@@ -1,0 +1,9 @@
+version: '3'
+services:
+  bid-service:
+    image: orchestrator:latest
+    environment:
+      - PORT=8001
+    network_mode: host
+    volumes:
+      - /app/logs/pad/orchestrator/:/app/logs/pad/orchestrator/

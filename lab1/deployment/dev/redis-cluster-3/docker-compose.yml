@@ -3,7 +3,7 @@ services:
   redis-cluster:
     image: 'redis:6.0-alpine'
     container_name: redis-cluster
-    command: redis-cli --cluster create 172.20.0.31:6373 172.20.0.32:6374 172.20.0.33:6375 172.20.0.34:6376 172.20.0.35:6377 172.20.0.36:6378 --cluster-replicas 1 --cluster-yes
+    command: redis-cli --cluster create 172.20.0.31:6373 172.20.0.32:6374 172.20.0.33:6375 172.20.0.34:6376 172.20.0.35:6377 172.20.0.36:6378 --cluster-replicas 1 --cluster-yes 
     networks:
       app_subnet:
         ipv4_address: 172.20.0.30
