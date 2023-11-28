@@ -33,7 +33,6 @@ func main() {
 	circuitBreakerMap["bid"] = NewCircuitBreaker()
 	circuitBreakerMap["inventory"] = NewCircuitBreaker()
 
-
     router := mux.NewRouter()
 
     router.HandleFunc("/gateway/health", gatewayStatus)
@@ -43,7 +42,13 @@ func main() {
         log.Fatal(err)
     }
 
+    var targetOrchestrator, errOrchestrator = url.Parse("http://localhost:8001")
+    if errOrchestrator != nil {
+        log.Fatal(err)
+    }
+
     serviceDiscovery := httputil.NewSingleHostReverseProxy(target)
+    orchestrator := httputil.NewSingleHostReverseProxy(targetOrchestrator)
 
     router.HandleFunc("/auctions/{path:.*}", func(w http.ResponseWriter, r *http.Request) {
 		TryServersHandler(w, r, "bid")
@@ -54,7 +59,10 @@ func main() {
     router.HandleFunc("/products/{path:.*}", func(w http.ResponseWriter, r *http.Request) {
 		TryServersHandler(w, r, "inventory")
 	})
-    router.HandleFunc("/service-discovery/health", proxyHealthCheck(serviceDiscovery))
+    router.HandleFunc("/service-discovery/health", simpleProxy(serviceDiscovery))
+
+    router.HandleFunc("/orchestrator/{path:.*}", simpleProxy(orchestrator))
+
 
     router.HandleFunc("/discovery/status", registerService(serviceDiscovery))
 
@@ -67,7 +75,30 @@ func main() {
     select {}
 }
 
-func proxyHealthCheck(proxy *httputil.ReverseProxy) http.HandlerFunc {
+func simpleProxy(proxy *httputil.ReverseProxy) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        select {
+        case semaphore <- struct{}{}:
+        default:
+            w.WriteHeader(http.StatusTeapot)
+            return
+        }
+
+        defer func() {
+            <-semaphore
+        }()
+
+        recorder := &StatusRecorder{
+            ResponseWriter: w,
+            Status:         200,
+        }
+
+        proxy.ServeHTTP(recorder, r)
+
+    }
+}
+
+func proxyOrchestrator(proxy *httputil.ReverseProxy) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         select {
         case semaphore <- struct{}{}:

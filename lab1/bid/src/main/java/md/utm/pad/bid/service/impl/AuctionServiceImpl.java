@@ -27,6 +27,7 @@ public class AuctionServiceImpl implements AuctionService {
     private final RedisRepository sessionCache;
     private final InventoryClientServiceImpl inventoryClientService;
     private final ObjectMapper objectMapper;
+
     private final Map<String, Timer> auctionTimer = new ConcurrentHashMap<>();
 
     @Override
@@ -102,7 +103,27 @@ public class AuctionServiceImpl implements AuctionService {
 
     @Override
     public String testRedis() {
-        sessionCache.save(new AuctionSession("1", "1", "1", 10.0));
+        AuctionSession auctionSession = new AuctionSession();
+        auctionSession.setAuctionId("1");
+        auctionSession.setId("100");
+        auctionSession.setMaxBidId("1");
+        auctionSession.setMaxBidAmount(10.0);
+
+        AuctionSession auctionSession2 = new AuctionSession();
+        auctionSession2.setAuctionId("2");
+        auctionSession2.setId("200");
+        auctionSession2.setMaxBidId("2");
+        auctionSession2.setMaxBidAmount(30.0);
+
+        AuctionSession auctionSession3 = new AuctionSession();
+        auctionSession3.setAuctionId("3");
+        auctionSession3.setId("300");
+        auctionSession3.setMaxBidId("3");
+        auctionSession3.setMaxBidAmount(40.0);
+
+        sessionCache.save(auctionSession);
+        sessionCache.save(auctionSession2);
+        sessionCache.save(auctionSession3);
         return "OK";
     }
 

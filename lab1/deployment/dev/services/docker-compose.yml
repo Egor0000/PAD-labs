@@ -25,7 +25,7 @@ services:
       - /app/logs/pad/bid/3/:/app/logs/pad/bid/
 
   invetory-service:
-    image: egorbabcinetchi/inventory-service:latest
+    image: inventory-service:latest
     environment:
       - PORT=8085
     network_mode: host

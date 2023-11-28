@@ -66,7 +66,6 @@ public class AuctionController {
     }
 
     @GetMapping(value = "/testRedis")
-    @Async
     public Mono<?> testRedis() {
         return Mono.fromCallable(() -> {
             return ResponseEntity.ok(auctionService.testRedis());
